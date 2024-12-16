@@ -1,0 +1,11 @@
+#############
+# Big files #
+#############
+# Generate using `../docker/runInDocker.sh -s`
+resources/dockerRunVm.tar
+
+#################
+# Project files #
+#################
+dependency-reduced-pom.xml
+target/

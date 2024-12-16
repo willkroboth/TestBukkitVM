@@ -1,0 +1,22 @@
+#############
+# Big files #
+#############
+# Generate using `./runInDocker.sh -s`
+resources/runFiles/storage/vmData/
+resources/runFiles/storage/vms/
+
+# Download/build server versions as desired (e.g. from https://papermc.io/downloads/paper)
+# TODO: The docker process should probably generate and cache server jars itself when it runs
+#        Or maybe the user should request/define server jars when they specify what versions to test
+resources/runFiles/storage/serverVersions/
+
+# Virtual machine image
+#  Curently download `alpine-virt-3.20.3-x86_64.iso` from https://alpinelinux.org/downloads/
+# TODO: Probably want `./runInDocker.sh -s` to download the vm iso if not present?
+resources/setupFiles/*.iso
+
+#################
+# Project files #
+#################
+dependency-reduced-pom.xml
+target/
