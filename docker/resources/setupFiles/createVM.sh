@@ -24,8 +24,9 @@ virt-install \
 -n $VMNAME \
 --os-variant=alpinelinux3.19 \
 --cdrom="./alpine-virt-3.20.3-x86_64.iso" \
---disk size=2 \
+--disk size=2,bus=virtio,cache=none,io=native \
 --ram=2560 \
+--cpu host-model \
 --vcpus=4 \
 --graphics none \
 --console pty,target_type=serial \

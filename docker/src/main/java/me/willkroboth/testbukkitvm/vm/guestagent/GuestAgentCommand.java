@@ -6,9 +6,15 @@ import org.libvirt.Domain;
 import org.libvirt.Error.ErrorNumber;
 import org.libvirt.LibvirtException;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 
 @FunctionalInterface
 public interface GuestAgentCommand<T> {
@@ -105,11 +111,53 @@ public interface GuestAgentCommand<T> {
             .addProperty("handle", fileHandle);
     }
 
-    // `guest-file-read` https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#qapidoc-42
-    static GuestAgentCommand<byte[]> readFile(int fileHandle) {
-        return new SimpleCommand<>("guest-file-read", returnElement ->
-            base64DecodeBytes(returnElement.getAsJsonObject().get("buf-b64").getAsString())
+    // `guest-file-read` https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#object-QGA-qapi-schema.GuestFileRead
+    static GuestAgentCommand<InputStream> readFile(int fileHandle) {
+        // QEMU limits the maximum bytes in one read to 48 MB, but doing that seems to time out Libvirt
+        //  The current value was copied from writeFile since it worked for that purpose
+        // final int MAX_BYTES = 48000000;
+        final int MAX_BYTES = 131072; // 2^17
+        GuestAgentCommand<GuestFileRead> requestRead = readFileChunk(fileHandle, MAX_BYTES);
+
+        return (domain, log) -> {
+            List<ByteArrayInputStream> chunks = new ArrayList<>();
+
+            int reads = 0;
+            GuestFileRead read;
+            do {
+                read = requestRead.run(domain, log);
+                chunks.add(new ByteArrayInputStream(read.bytes()));
+
+                reads++;
+                System.out.println("Read file chunk #" + reads);
+            } while (!read.eof());
+
+            System.out.println("Done!");
+
+            return new SequenceInputStream(Collections.enumeration(chunks));
+        };
+    }
+
+    private static GuestAgentCommand<GuestFileRead> readFileChunk(int fileHandle, int readCount) {
+        SimpleCommand<GuestFileRead> command = new SimpleCommand<>("guest-file-read", returnElement -> {
+            JsonObject response = returnElement.getAsJsonObject();
+
+            int count = response.get("count").getAsInt();
+
+            String base64 = response.get("buf-b64").getAsString();
+            byte[] bytes = base64DecodeBytes(base64);
+
+            boolean eof = response.get("eof").getAsBoolean();
+
+            return new GuestFileRead(count, bytes, eof);
+        }
         ).addProperty("handle", fileHandle);
+
+        if (readCount > 0) {
+            command.addProperty("count", readCount);
+        }
+
+        return command;
     }
 
     // `guest-file-write` https://qemu-project.gitlab.io/qemu/interop/qemu-ga-ref.html#qapidoc-49

@@ -217,10 +217,10 @@ public class VMManager {
 
         for (String fileName : resourceNames) {
             int fileHandle = GuestAgentCommand.openFile(Path.of(remoteDestination, fileName), FileOpenMode.READ).run(domain, true);
-            byte[] bytes = GuestAgentCommand.readFile(fileHandle).run(domain, false);
+            InputStream bytes = GuestAgentCommand.readFile(fileHandle).run(domain, false);
             GuestAgentCommand.closeFile(fileHandle).run(domain, false);
 
-            resources.put(fileName, new ByteArrayInputStream(bytes));
+            resources.put(fileName, bytes);
         }
 
         System.out.println("Done!");

@@ -31,7 +31,7 @@ public class Run {
         ServerCreator serverCreator = new ServerCreator(vmCreator, storageDirectory);
 
         // Create server
-        ServerManager serverManager = serverCreator.createServer("paper-1.21.3");
+        ServerManager serverManager = serverCreator.createServer("paper-1.21.4");
         serverManager.rerunServer();
 
         connect.close();
